@@ -1,33 +1,37 @@
 use core::panic;
 use hidapi::{HidApi, HidDevice, HidResult};
-use std::{collections::HashMap, thread, time::Duration};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    thread::{self, JoinHandle},
+    time::Duration,
+};
 
 #[derive(Debug)]
+#[warn(dead_code)]
 struct G29<'a> {
     device: HidDevice,
-    cashe: usize,
+    cache: Vec<u8>,
     state: HashMap<&'a str, u8>,
 }
 
-impl G29<'_> {
+impl<'a> G29<'_> {
     fn new() -> Self {
         let api = HidApi::new().unwrap();
         let device = api.open(0x17ef, 0x608d).unwrap();
         let mut state = HashMap::new();
-        state.insert("steering", 50);
-        state.insert("throttle", 255);
+        state.insert("steeringithrottle", 255);
         state.insert("clutch", 255);
         state.insert("brake", 255);
         Self {
             device,
-            cashe: 0,
+            cache: Vec::new(),
             state,
         }
     }
 
     // Write to the G29 Driver
     // calibration the steering wheel of the G2
-    #[warn(dead_code)]
     fn reset(&self) {
         self.device
             .write(&[0xf8, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00])
@@ -38,7 +42,7 @@ impl G29<'_> {
         // wait for setting the calibration
         thread::sleep(Duration::from_secs(10));
     }
-    #[warn(dead_code)]
+
     fn force_feedback_constant(&self, val: f32) {
         if val < 0.0 || val > 1.0 {
             panic!("Value must be in range of 0 to 1");
@@ -50,15 +54,15 @@ impl G29<'_> {
 
     /// default value to be used strength = 0.5 and rate = 0.05
     fn set_autocenter(&self, strength: f32, rate: f32) {
-        if strength < 0.0 || strength > 1.0 {
+        if (strength < 0.0) || (strength > 1.0) {
             panic!("Strength must be in range of 0.0 to 1.0");
         }
-        if rate < 0.0 || rate > 1.0 {
+        if (rate < 0.0) || (rate > 1.0) {
             panic!("Rate must be in range of 0.0 to 1.0 ");
         }
 
         // autocenter Up
-        let up_msg = [0x14, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let up_msg = [0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         self.device.write(&up_msg).unwrap();
 
         //scale Rate 0 -> 255 and Strength to 0 ->15
@@ -79,79 +83,110 @@ impl G29<'_> {
             .unwrap();
     }
 
-    fn force_off(self) {
+    fn force_off(&self) {
         self.device
             .write(&[0xf3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
             .unwrap();
     }
-    #[warn(unused_variables)]
+    
     // Read from the G29 Input
-    fn pump(&mut self) -> usize {
+    fn pump(&mut self, timeout: i32) -> usize {
         let mut buf = [0u8; 16];
-        let data = self.device.read(&mut buf).unwrap();
-        if data >= 23 {
-            //self.update_state();
-            self.cashe = data;
+        let data = self.device.read_timeout(&mut buf, timeout).unwrap();
+        let byte_array = buf[..data].to_vec();
+
+        if byte_array.len() >= 12 {
+            self.update_state(&byte_array);
+            self.cache = byte_array;
         }
         return data;
     }
-    fn update_state(&self, byte_array: Vec<f32>) {
-        if self.cashe == 0 {
-            panic!("cashe is Empty");
+
+    fn start_pumping(&'static mut self) -> JoinHandle<()> {
+        thread::spawn(move || {
+            self.read_loop();
+        })
+
+        //return spawn_thread_read;
+    }
+
+    fn read_loop(&mut self) {
+        loop {
+            self.pump(10);
+        }
+    }
+
+    //    fn stop_reading(&'static mut self) {
+    //        if let Some(thread) = self.start_pumping(10) {
+    //            thread.join();
+    //        } else {
+    //            println!("thread   reading not spawned");
+    //        }
+    //    }
+
+    fn update_state(&mut self, byte_array: &Vec<u8>) {
+        if self.cache.is_empty() {
+            panic!("cache is Empty");
         }
 
         //Update state
         // steering
-        if byte_array[4] != self.cashe[4] or byte_array != self.cashe{
-            let steering_val = self.calc_steering(&mut byte_array[5],&mut byte_array[4]);
+        if byte_array[4] != self.cache[4] || byte_array[5] != self.cache[5] {
+            let steering_val = self.calculate_steering(&byte_array[5], &byte_array[4]);
             self.state.insert("steering", steering_val);
         }
-        //throttle 
-        if byte_array[6] != self.cashe[6]{
+        //throttle
+        if byte_array[6] != self.cache[6] {
             self.state.insert("throttle", byte_array[6]);
         }
         //brake
-        if byte_array[7] != self.cashe[7]{
+        if byte_array[7] != self.cache[7] {
             self.state.insert("brake", byte_array[7]);
         }
 
         //clutch
-        if byte_array[8] != self.cashe[8] {
+        if byte_array[8] != self.cache[8] {
             self.state.insert("clutch", byte_array[8]);
         }
     }
+    
     // geter State
-    fn get_state(&self) -> HashMap<&str,u8>{
-        self.state
+    fn get_state(&self) -> HashMap<&str, u8> {
+        self.state.clone()
     }
 
-    fn calc_steering(&self,start:&mut f32 , end:&mut f32) -> u8{
-
+    fn calculate_steering(&self, start: &u8, end: &u8) -> u8 {
         // start from 0 to 255
         // end from 0 to 255
         // scale between 0 -> 100
-        *start = (*start/256.0) * (100.0-(100.0/256.0));
+        let start_scale = (*start / 255) * (100 - (100 / 255));
         // scale between 0 -> 3
-        *end = (*end/256.0) * (100.0/256.0);
+        let end_scale = (*end / 255) * (100 / 255);
 
-        return (*start + *end).round() as u8;
-
+        return (start_scale + end_scale) as u8;
     }
 }
 
 fn main() {
-    let gdriver = G29::new();
-    println!("Device : {:?}", gdriver.device);
-    println!("Show all available device");
-    match HidApi::new() {
-        Ok(api) => {
-            for device in api.device_list() {
-                println!("{:04x} :: {:04x}", device.vendor_id(), device.product_id());
-            }
-        }
-        Err(e) => {
-            println!("Err {}", e);
-        }
-    }
+    let  g29 = G29::new();
+    //let thread = g29.start_pumping();
+
+    let state = g29.get_state();
+    println!("{:?}", state);
+
+    //thread.join();
+
+    // println!("Device : {:?}", g29.device);
+    //println!("Show all available device");
+    //    match HidApi::new() {
+    //        Ok(api) => {
+    //            for device in api.device_list() {
+    //                println!("{:04x} :: {:04x}", device.vendor_id(), device.product_id());
+    //            }
+    //        }
+    //        Err(e) => {
+    //            println!("Err {}", e);
+    //        }
+    //    }
     // println!("Hello, world!");
 }
