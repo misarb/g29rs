@@ -88,7 +88,7 @@ impl<'a> G29<'_> {
             .write(&[0xf3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
             .unwrap();
     }
-    
+
     // Read from the G29 Input
     fn pump(&mut self, timeout: i32) -> usize {
         let mut buf = [0u8; 16];
@@ -149,7 +149,7 @@ impl<'a> G29<'_> {
             self.state.insert("clutch", byte_array[8]);
         }
     }
-    
+
     // geter State
     fn get_state(&self) -> HashMap<&str, u8> {
         self.state.clone()
@@ -168,7 +168,9 @@ impl<'a> G29<'_> {
 }
 
 fn main() {
-    let  g29 = G29::new();
+    let g29 = G29::new();
+    g29.set_autocenter(0.5, 0.05);
+    g29.force_feedback_constant(0.5);
     //let thread = g29.start_pumping();
 
     let state = g29.get_state();
