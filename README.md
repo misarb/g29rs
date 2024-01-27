@@ -1,8 +1,8 @@
-#G29rs 
+# G29rs 
 Rust driver for logitech G29 
-#Getting Started
+# Getting Started
 
-#Prerequisites
+# Prerequisites
  - Rust
  - Hidapi : "2.5.0"
 
@@ -10,7 +10,7 @@ Rust driver for logitech G29
 
 
 
-#How to use 
+# How to use 
 
 ```rust 
      let  g29 = G29::new();
@@ -25,7 +25,7 @@ Rust driver for logitech G29
 ```
 
 
-#TODO
+# TODO
 
 - [ ] Thread for reading data from G29
 - [ ] Writing Test
@@ -33,11 +33,11 @@ Rust driver for logitech G29
 - [ ] Reading reverse mode from button in the G29 controller 
 - [ ] Make methode to transform the State for Carla user "throttle  [0 -> 1] brake [0 -> 1] brake[0->1]"
 
-#Contributing
+# Contributing
 Contributions are welcome! If you have improvements, bug fixes, or new features to propose, please submit a pull request.
 
 
-#support
+# support
 
 only G29 logitech controller Driving wheel and pedals is support for ps3 mode
 
