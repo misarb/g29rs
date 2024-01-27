@@ -1,18 +1,28 @@
 use core::panic;
 use hidapi::{HidApi, HidDevice, HidResult};
-use std::{thread, time::Duration};
+use std::{collections::HashMap, thread, time::Duration};
 
 #[derive(Debug)]
-struct G29 {
+struct G29<'a> {
     device: HidDevice,
+    cashe: usize,
+    state: HashMap<&'a str, u8>,
 }
 
-impl G29 {
+impl G29<'_> {
     fn new() -> Self {
         let api = HidApi::new().unwrap();
         let device = api.open(0x17ef, 0x608d).unwrap();
-
-        Self { device }
+        let mut state = HashMap::new();
+        state.insert("steering", 50);
+        state.insert("throttle", 255);
+        state.insert("clutch", 255);
+        state.insert("brake", 255);
+        Self {
+            device,
+            cashe: 0,
+            state,
+        }
     }
 
     // Write to the G29 Driver
@@ -73,6 +83,59 @@ impl G29 {
         self.device
             .write(&[0xf3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
             .unwrap();
+    }
+    #[warn(unused_variables)]
+    // Read from the G29 Input
+    fn pump(&mut self) -> usize {
+        let mut buf = [0u8; 16];
+        let data = self.device.read(&mut buf).unwrap();
+        if data >= 23 {
+            //self.update_state();
+            self.cashe = data;
+        }
+        return data;
+    }
+    fn update_state(&self, byte_array: Vec<f32>) {
+        if self.cashe == 0 {
+            panic!("cashe is Empty");
+        }
+
+        //Update state
+        // steering
+        if byte_array[4] != self.cashe[4] or byte_array != self.cashe{
+            let steering_val = self.calc_steering(&mut byte_array[5],&mut byte_array[4]);
+            self.state.insert("steering", steering_val);
+        }
+        //throttle 
+        if byte_array[6] != self.cashe[6]{
+            self.state.insert("throttle", byte_array[6]);
+        }
+        //brake
+        if byte_array[7] != self.cashe[7]{
+            self.state.insert("brake", byte_array[7]);
+        }
+
+        //clutch
+        if byte_array[8] != self.cashe[8] {
+            self.state.insert("clutch", byte_array[8]);
+        }
+    }
+    // geter State
+    fn get_state(&self) -> HashMap<&str,u8>{
+        self.state
+    }
+
+    fn calc_steering(&self,start:&mut f32 , end:&mut f32) -> u8{
+
+        // start from 0 to 255
+        // end from 0 to 255
+        // scale between 0 -> 100
+        *start = (*start/256.0) * (100.0-(100.0/256.0));
+        // scale between 0 -> 3
+        *end = (*end/256.0) * (100.0/256.0);
+
+        return (*start + *end).round() as u8;
+
     }
 }
 
