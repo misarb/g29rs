@@ -9,13 +9,41 @@ use std::{
 
 #[derive(Debug)]
 #[warn(dead_code)]
-struct G29<'a> {
+struct G29Driver {
     device: HidDevice,
     cache: Vec<u8>,
-    state: HashMap<&'a str, u8>,
+    state: HashMap<&'static str, u8>,
 }
 
-impl<'a> G29<'_> {
+struct G29 {
+    g29: Arc<Mutex<G29Driver>>,
+    reading_thread: Option<JoinHandle<()>>,
+}
+
+impl G29 {
+    fn new() -> Self {
+        Self {
+            g29: Arc::new(Mutex::new(G29Driver::new())),
+            reading_thread: None,
+        }
+    }
+    fn start_pumping(&mut self) {
+        let local_g29 = self.g29.clone();
+        self.reading_thread = Some(thread::spawn(move || {
+            local_g29.lock().unwrap().read_loop();
+        }));
+    }
+
+    fn stop_pumping(&mut self) {
+        if let Some(handle) = self.reading_thread.take() {
+            handle.join().unwrap();
+        } else {
+            println!("No Thread spawned");
+        }
+    }
+}
+
+impl G29Driver {
     fn new() -> Self {
         let api = HidApi::new().unwrap();
         let device = api.open(0x17ef, 0x608d).unwrap();
@@ -30,7 +58,7 @@ impl<'a> G29<'_> {
         }
     }
 
-    // Write to the G29 Driver
+    // Write to the G29Driver Driver
     // calibration the steering wheel of the G2
     fn reset(&self) {
         self.device
@@ -89,7 +117,7 @@ impl<'a> G29<'_> {
             .unwrap();
     }
 
-    // Read from the G29 Input
+    // Read from the G29Driver Input
     fn pump(&mut self, timeout: i32) -> usize {
         let mut buf = [0u8; 16];
         let data = self.device.read_timeout(&mut buf, timeout).unwrap();
@@ -102,13 +130,13 @@ impl<'a> G29<'_> {
         return data;
     }
 
-    fn start_pumping(&'static mut self) -> JoinHandle<()> {
-        thread::spawn(move || {
-            self.read_loop();
-        })
-
-        //return spawn_thread_read;
-    }
+    //    fn start_pumping(&'static mut self) -> JoinHandle<()> {
+    //        thread::spawn(move || {
+    //            self.read_loop();
+    //        })
+    //
+    //        //return spawn_thread_read;
+    //    }
 
     fn read_loop(&mut self) {
         loop {
@@ -168,13 +196,19 @@ impl<'a> G29<'_> {
 }
 
 fn main() {
-    let g29 = G29::new();
-    g29.set_autocenter(0.5, 0.05);
-    g29.force_feedback_constant(0.5);
-    //let thread = g29.start_pumping();
-
-    let state = g29.get_state();
-    println!("{:?}", state);
+    let mut g29 = G29::new();
+    g29.start_pumping();
+    g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
+    loop {
+        println!("steering = {:?}", g29.g29.lock().unwrap().get_state());
+    }
+    //    let g29 = G29Driver::new();
+    //    g29.set_autocenter(0.5, 0.05);
+    //    g29.force_feedback_constant(0.5);
+    //    //let thread = g29.start_pumping();
+    //
+    //    let state = g29.get_state();
+    //    println!("{:?}", state);
 
     //thread.join();
 
