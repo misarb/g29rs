@@ -46,14 +46,15 @@ impl G29 {
 impl G29Driver {
     fn new() -> Self {
         let api = HidApi::new().unwrap();
-        let device = api.open(0x17ef, 0x608d).unwrap();
+        let device = api.open(0x046d, 0xc24f).unwrap();
         let mut state = HashMap::new();
-        state.insert("steeringithrottle", 255);
+        state.insert("steering", 255);
+        state.insert("throttle", 255);
         state.insert("clutch", 255);
         state.insert("brake", 255);
         Self {
             device,
-            cache: Vec::new(),
+            cache: vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], //Vec::new(),
             state,
         }
     }
@@ -70,14 +71,21 @@ impl G29Driver {
         // wait for setting the calibration
         thread::sleep(Duration::from_secs(10));
     }
+    fn connect(&mut self) {
+        self.pump(10);
+        self.reset();
+    }
 
     fn force_feedback_constant(&self, val: f32) {
         if val < 0.0 || val > 1.0 {
             panic!("Value must be in range of 0 to 1");
         }
         let val_scale = (val * 255.0).round() as u8;
+        println!("val = {}", hex::encode(&[val_scale]));
         let msg = [0x11, 0x00, val_scale, 0x00, 0x00, 0x00, 0x00];
+        println!("{:?}", msg);
         self.device.write(&msg).unwrap();
+        // thread::sleep(Duration::from_secs(1));
     }
 
     /// default value to be used strength = 0.5 and rate = 0.05
@@ -109,6 +117,7 @@ impl G29Driver {
                 0x00,
             ])
             .unwrap();
+        thread::sleep(Duration::from_secs(10));
     }
 
     fn force_off(&self) {
@@ -119,11 +128,14 @@ impl G29Driver {
 
     // Read from the G29Driver Input
     fn pump(&mut self, timeout: i32) -> usize {
-        let mut buf = [0u8; 16];
+        let mut buf = [0u8; 16]; //16
         let data = self.device.read_timeout(&mut buf, timeout).unwrap();
         let byte_array = buf[..data].to_vec();
+        //println!("byte_readed = {:?}", byte_array);
 
         if byte_array.len() >= 12 {
+            //12
+            // self.cache = byte_array.clone();
             self.update_state(&byte_array);
             self.cache = byte_array;
         }
@@ -161,6 +173,7 @@ impl G29Driver {
         // steering
         if byte_array[4] != self.cache[4] || byte_array[5] != self.cache[5] {
             let steering_val = self.calculate_steering(&byte_array[5], &byte_array[4]);
+            //println!("steering_scaled = {}", steering_val);
             self.state.insert("steering", steering_val);
         }
         //throttle
@@ -176,33 +189,38 @@ impl G29Driver {
         if byte_array[8] != self.cache[8] {
             self.state.insert("clutch", byte_array[8]);
         }
+
+        println!("update_state = {:?}", self.state);
     }
 
     // geter State
-    fn get_state(&self) -> HashMap<&str, u8> {
-        self.state.clone()
+    fn get_state(&self) -> &HashMap<&str, u8> {
+        &self.state
     }
 
     fn calculate_steering(&self, start: &u8, end: &u8) -> u8 {
         // start from 0 to 255
         // end from 0 to 255
         // scale between 0 -> 100
-        let start_scale = (*start / 255) * (100 - (100 / 255));
+        //println!("start :: {}  end = {}", *start, *end);
+        let start_scale = (*start as f32 / 256.0) * (100.0 - (100.0 / 256.0));
         // scale between 0 -> 3
-        let end_scale = (*end / 255) * (100 / 255);
-
-        return (start_scale + end_scale) as u8;
+        let end_scale = (*end as f32 / 255.0) * (100.0 / 256.0);
+        //println!("start :: {}  end = {}", start_scale, end_scale);
+        return (start_scale + end_scale).round() as u8;
     }
 }
 
 fn main() {
     let mut g29 = G29::new();
+    //g29.g29.lock().unwrap().reset();
     g29.start_pumping();
-    g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
+    //g29.g29.lock().unwrap().force_feedback_constant(0.6);
+    //g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
     loop {
         println!("steering = {:?}", g29.g29.lock().unwrap().get_state());
     }
-    //    let g29 = G29Driver::new();
+    //    //    let g29 = G29Driver::new();
     //    g29.set_autocenter(0.5, 0.05);
     //    g29.force_feedback_constant(0.5);
     //    //let thread = g29.start_pumping();
