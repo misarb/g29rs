@@ -81,11 +81,11 @@ impl G29Driver {
             panic!("Value must be in range of 0 to 1");
         }
         let val_scale = (val * 255.0).round() as u8;
-        println!("val = {}", hex::encode(&[val_scale]));
-        let msg = [0x11, 0x00, val_scale, 0x00, 0x00, 0x00, 0x00];
+        // println!("val = {}", hex::encode(&[val_scale]));
+        let msg = [0x14, 0x00, val_scale, 0x00, 0x00, 0x00, 0x00];
         println!("{:?}", msg);
         self.device.write(&msg).unwrap();
-        // thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(1));
     }
 
     /// default value to be used strength = 0.5 and rate = 0.05
@@ -131,38 +131,19 @@ impl G29Driver {
         let mut buf = [0u8; 16]; //16
         let data = self.device.read_timeout(&mut buf, timeout).unwrap();
         let byte_array = buf[..data].to_vec();
-        //println!("byte_readed = {:?}", byte_array);
 
         if byte_array.len() >= 12 {
-            //12
-            // self.cache = byte_array.clone();
             self.update_state(&byte_array);
             self.cache = byte_array;
         }
         return data;
     }
 
-    //    fn start_pumping(&'static mut self) -> JoinHandle<()> {
-    //        thread::spawn(move || {
-    //            self.read_loop();
-    //        })
-    //
-    //        //return spawn_thread_read;
-    //    }
-
     fn read_loop(&mut self) {
         loop {
             self.pump(10);
         }
     }
-
-    //    fn stop_reading(&'static mut self) {
-    //        if let Some(thread) = self.start_pumping(10) {
-    //            thread.join();
-    //        } else {
-    //            println!("thread   reading not spawned");
-    //        }
-    //    }
 
     fn update_state(&mut self, byte_array: &Vec<u8>) {
         if self.cache.is_empty() {
@@ -213,34 +194,11 @@ impl G29Driver {
 
 fn main() {
     let mut g29 = G29::new();
-    //g29.g29.lock().unwrap().reset();
+    //g29.g29.lock().unwrap().connect();
+    g29.g29.lock().unwrap().force_feedback_constant(0.6);
     g29.start_pumping();
-    //g29.g29.lock().unwrap().force_feedback_constant(0.6);
     //g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
     loop {
         println!("steering = {:?}", g29.g29.lock().unwrap().get_state());
     }
-    //    //    let g29 = G29Driver::new();
-    //    g29.set_autocenter(0.5, 0.05);
-    //    g29.force_feedback_constant(0.5);
-    //    //let thread = g29.start_pumping();
-    //
-    //    let state = g29.get_state();
-    //    println!("{:?}", state);
-
-    //thread.join();
-
-    // println!("Device : {:?}", g29.device);
-    //println!("Show all available device");
-    //    match HidApi::new() {
-    //        Ok(api) => {
-    //            for device in api.device_list() {
-    //                println!("{:04x} :: {:04x}", device.vendor_id(), device.product_id());
-    //            }
-    //        }
-    //        Err(e) => {
-    //            println!("Err {}", e);
-    //        }
-    //    }
-    // println!("Hello, world!");
 }
