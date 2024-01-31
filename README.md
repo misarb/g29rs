@@ -1,33 +1,36 @@
 # G29rs 
 Rust driver for logitech G29 
+
+This library provides a Rust interface for Logitech G29 wheel/pedal and force feedback control. 
+It utilizes the `hidapi` crate to interact with the G29 hardware
 # Getting Started
 
 # Prerequisites
  - Rust
  - Hidapi : "2.5.0"
 
-
-
-
-
 # How to use 
 
-```rust 
-     let  g29 = G29::new();
-     // write centering the wheel 
-     g29.set_autocenter(0.5, 0.05);
+```rust
+ use g29::{G29, G29Driver};
 
-     // setting Force feedbacki
-     g29.force_feedback_constant(0.5);   
-     
-     // Reading from the G29
-     // steel under test
+ fn main() {
+     // Create a new G29 instance
+     let mut g29 = G29::new();
+     // set force feedback for G29 controller - make sure to set the Logitech to PS3 Mode
+     g29.g29.lock().unwrap().force_feedback_constant(0.6);
+     // Start the reading thread to continuously read input from the G29 device
+     g29.start_pumping();
+     loop {
+           println!("steering = {:?}", g29.g29.lock().unwrap().get_state());
+      }
+ }
 ```
 
 
 # TODO
 
-- [ ] Thread for reading data from G29
+- [x] Thread for reading data from G29
 - [ ] Writing Test
 - [ ] Make it as Lib after testing the full code 
 - [ ] Reading reverse mode from button in the G29 controller 
@@ -39,6 +42,6 @@ Contributions are welcome! If you have improvements, bug fixes, or new features 
 
 # support
 
-only G29 logitech controller Driving wheel and pedals is support for ps3 mode
+only G29 logitech controller Driving wheel and pedals is support for PS3 mode
 
 support Force feedback
