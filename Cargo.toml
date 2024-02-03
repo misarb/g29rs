@@ -1,6 +1,6 @@
 [package]
 name = "g29"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Lahcen Boulbalah"]
 edition = "2021"
 description = "A library offering an interface for Logitech G29 wheel/pedal and force feedback control."
