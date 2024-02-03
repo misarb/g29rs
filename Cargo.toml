@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Lahcen Boulbalah"]
 edition = "2021"
 description = "A library offering an interface for Logitech G29 wheel/pedal and force feedback control."
+Repository = "https://github.com/misarb/g29rs"
+keywords = ["Logitech G29", "G29","Driver","Force Feedback","control"]
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
