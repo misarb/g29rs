@@ -4,7 +4,7 @@ version = "0.1.1"
 authors = ["Lahcen Boulbalah"]
 edition = "2021"
 description = "A library offering an interface for Logitech G29 wheel/pedal and force feedback control."
-Repository = "https://github.com/misarb/g29rs"
+Repository = "https://github.com/misarb/g29rs/"
 keywords = ["Logitech", "G29","Driver","ForceFeedback","control"]
 license = "MIT"
 
