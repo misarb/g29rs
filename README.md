@@ -3,7 +3,6 @@ Rust driver for logitech G29
 
 This library provides a Rust interface for Logitech G29 wheel/pedal and force feedback control. 
 It utilizes the `hidapi` crate to interact with the G29 hardware
-# Getting Started
 
 # Prerequisites
  - Rust
@@ -27,13 +26,31 @@ It utilizes the `hidapi` crate to interact with the G29 hardware
  }
 ```
 
+ Interacting with the driver without starting a thread to set force feedback.
+
+```rust
+ use g29::G29Driver;
+
+ fn main() {
+     // Create a new G29 driver instance
+     let mut g29 = G29Driver::new();
+
+     // Reset the G29 device, including steering wheel calibration
+     g29.reset();
+
+     // Example: Set autocenter with a strength of 0.5 and a rate of 0.05
+     g29.set_autocenter(0.5, 0.05);
+
+ }
+```
+
 
 # TODO
 
 - [x] Thread for reading data from G29
 - [ ] Writing Test
-- [ ] Make it as Lib after testing the full code 
-- [ ] Reading reverse mode from button in the G29 controller 
+- [x] Make it as Lib after testing the full code 
+- [ ] Reading reverse mode from buttons in the G29 controller 
 - [ ] Make methode to transform the State for Carla user "throttle  [0 -> 1] brake [0 -> 1] brake[0->1]"
 
 # Contributing
