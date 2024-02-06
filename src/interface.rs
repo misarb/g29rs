@@ -1,23 +1,5 @@
 //!
-//! Interacting with the driver without starting a thread to set force feedback.
-//! 
-//! ## Example
-//! 
-//! ```rust
-//! use g29::G29Driver;
-//!
-//! fn main() {
-//!     // Create a new G29 driver instance
-//!     let mut g29 = G29Driver::new();
-//!
-//!     // Reset the G29 device, including steering wheel calibration
-//!     g29.reset();
-//!
-//!     // Example: Set autocenter with a strength of 0.5 and a rate of 0.05
-//!     g29.set_autocenter(0.5, 0.05);
-//!
-//! }
-//! ```
+//! Interfaces to interacting with the G29 controller to set force feedback , Autocenter ...
 //!
  
 use hidapi::{HidApi, HidDevice};
@@ -27,15 +9,15 @@ use std::{
     time::Duration,
 };
 
-///! The `G29Driver` struct is the underlying driver for the G29 device, managing communication and state.
+///! The `G29Interface` struct is the underlying driver for the G29 device, managing communication and state.
 #[derive(Debug)]
-pub struct G29Driver {
+pub struct G29Interface {
     device: HidDevice,
     cache: Vec<u8>,
     state: HashMap<&'static str, u8>,
 }
 
-impl G29Driver {
+impl G29Interface {
     /// Initializes a new G29 driver, opens the device, and sets initial state.
     pub fn new() -> Self {
         let api = HidApi::new().unwrap();
@@ -52,7 +34,7 @@ impl G29Driver {
         }
     }
 
-    // Write to the G29Driver Driver
+    // Write to the G29Interface Driver
     /// Resets the G29 device, including steering wheel calibration.
     /// calibration the steering wheel of the G2
     ///
