@@ -1,81 +1,76 @@
-// use std::{sync::{Arc, Mutex}, thread};
-// use g29::{G29, G29Driver};
+use std::thread::JoinHandle;
+use std::time::Duration;
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    
+};
 
-// trait DeviceInteraction {
-//     fn new() -> Self;
-//     fn start_pumping(&mut self);
-//     fn stop_pumping(&mut self);
-//     fn get_reading_thread(&self) -> Option<thread::JoinHandle<()>>;
-// }
+// Define a mock G29Driver
+#[derive(Debug)]
+pub struct MockG29Driver;
 
-// // Implement the trait for the actual G29Driver
-// impl DeviceInteraction for G29 {
-//     fn new() -> Self {
-//         Self {
-//             g29: Arc::new(Mutex::new(G29Driver::new())),
-//             reading_thread: None,
-//         }
-//     }
+impl MockG29Driver {
+    pub fn new() -> Self {
+        Self
+    }
 
-//     fn start_pumping(&mut self) {
-//         let local_g29 = self.g29.clone();
-//         self.reading_thread = Some(thread::spawn(move || {
-//             local_g29.lock().unwrap().read_loop();
-//         }));
-//     }
+    // Simulate the read_loop method
+    pub fn read_loop(&self) {
+        // Simulate reading input from the G29 device
+        thread::sleep(Duration::from_millis(100));
+    }
+}
 
-//     fn stop_pumping(&mut self) {
-//         if let Some(handle) = self.reading_thread.take() {
-//             handle.join().unwrap();
-//         } else {
-//             println!("No Thread spawned");
-//         }
-//     }
+// Create a mock implementation of G29 for testing
+#[derive(Debug)]
+pub struct MockG29 {
+    pub g29: Arc<Mutex<MockG29Driver>>,
+    reading_thread: Option<JoinHandle<()>>,
+}
 
-//     fn get_reading_thread(&self) -> Option<thread::JoinHandle<()>> {
-//         self.reading_thread.clone()
-//     }
-// }
+impl MockG29 {
+    pub fn new() -> Self {
+        Self {
+            g29: Arc::new(Mutex::new(MockG29Driver::new())),
+            reading_thread: None,
+        }
+    }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use std::thread::sleep;
-//     use std::time::Duration;
+    pub fn start_pumping(&mut self) {
+        let local_g29 = self.g29.clone();
+        self.reading_thread = Some(thread::spawn(move || {
+            local_g29.lock().unwrap().read_loop();
+        }));
+    }
 
-//     // Implement a mock device for testing purposes
-//     struct MockDevice;
+    pub fn stop_pumping(&mut self) {
+        if let Some(handle) = self.reading_thread.take() {
+            handle.join().unwrap();
+        } else {
+            println!("No Thread spawned");
+        }
+    }
+}
 
-//     impl DeviceInteraction for MockDevice {
-//         fn new() -> Self {
-//             MockDevice
-//         }
+// Example test case
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//         fn start_pumping(&mut self) {
-//             // Implement mock behavior for starting pumping
-//         }
+    #[test]
+    fn test_start_stop_pumping() {
+        let mut g29 = MockG29::new();
 
-//         fn stop_pumping(&mut self) {
-//             // Implement mock behavior for stopping pumping
-//         }
+        g29.start_pumping();
+        // Check if the reading thread is running
+        assert!(g29.reading_thread.is_some(), "Thread not started");
 
-//         fn get_reading_thread(&self) -> Option<thread::JoinHandle<()>> {
-//             None
-//         }
-//     }
+        // Add assertions or additional tests here
 
-//     #[test]
-//     fn test_g29_start_stop_pumping() {
-//         // Use the mock device for testing
-//         let mut g29 = MockDevice::new();
+        g29.stop_pumping();
 
-//         // Ensure that starting and stopping the pumping thread doesn't panic
-//         g29.start_pumping();
-
-//         // Sleep for a short duration to allow some pumping
-//         sleep(Duration::from_secs(1));
-
-//         g29.stop_pumping();
-//         // Additional assertions can be added to check the state after stopping pumping
-//     }
-// }
+        // Check if the reading thread is stopped
+        assert!(g29.reading_thread.is_none(), "Thread not stopped");
+    }
+}
