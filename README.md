@@ -1,4 +1,6 @@
 # G29rs 
+![GitHub License](https://img.shields.io/github/license/misarb/g29rs)
+![Crates.io Version](https://img.shields.io/crates/v/g29)   
 Rust driver for logitech G29 
 
 This library provides a Rust interface for Logitech G29 wheel/pedal and force feedback control. 
