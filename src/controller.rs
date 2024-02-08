@@ -5,10 +5,8 @@
 //!
 use crate::interface::G29Interface;
 use std::{
-    collections::HashMap,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
-    time::Duration,
 };
 
 // ## Controller Struct
@@ -43,38 +41,5 @@ impl Controller {
         } else {
             println!("No Thread spawned");
         }
-    }
-
-    /// Transforms the G29 controller state of throttle, brake, and steering control to Carla
-    /// controller input, where Throttle is in the range [0, 1], Brake is in the range [0, 1],
-    /// and Steering is in the range [-1, 1].
-
-    pub fn carla_vehicle_controle(&self) -> HashMap<&str, f32> {
-        let lock = self.g29.lock().unwrap();
-        let state = lock.get_state();
-        let mut state_transform_carla = HashMap::new();
-        if let (Some(throttle), Some(brake), Some(steering)) = (
-            state.get("throttle"),
-            state.get("brake"),
-            state.get("steering"),
-        ) {
-            // println!("Throttle: {}, Brake: {}", throttle, brake);
-            state_transform_carla.insert(
-                "steering",
-                self.normalize_steering_to_carla_steer(*steering),
-            );
-            state_transform_carla.insert("throttle", f32::from(*throttle) / 255.0);
-            state_transform_carla.insert("brake", f32::from(*brake) / 255.0);
-        } else {
-            //println!("Error: no State from the G29 controlelr");
-            state_transform_carla.insert("throttle", 0.0);
-            state_transform_carla.insert("brake", 0.0);
-        }
-        state_transform_carla
-    }
-
-    fn normalize_steering_to_carla_steer(&self, steering: u8) -> f32 {
-        let normilize_steering = (steering as f32 / 127.0) - 1.0;
-        normilize_steering
     }
 }
