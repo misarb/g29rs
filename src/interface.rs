@@ -163,30 +163,24 @@ impl G29Interface {
     }
 
     pub fn carla_vehicle_controle(&self) -> HashMap<String, f32> {
-        let state = &self.state;
         let mut state_transform_carla = HashMap::new();
-        if let (Some(throttle), Some(brake), Some(steering)) = (
-            state.get("throttle"),
-            state.get("brake"),
-            state.get("steering"),
-        ) {
-            // println!("Throttle: {}, Brake: {}", throttle, brake);
-            state_transform_carla.insert(
-                "steering".to_string(),
-                self.normalize_steering_to_carla_steer(*steering),
-            );
-            state_transform_carla.insert("throttle".to_string(), f32::from(*throttle) / 255.0);
-            state_transform_carla.insert("brake".to_string(), f32::from(*brake) / 255.0);
-        } else {
-            //println!("Error: no State from the G29 controlelr");
-            state_transform_carla.insert("throttle".to_string(), 0.0);
-            state_transform_carla.insert("brake".to_string(), 0.0);
-        }
+        let state = &self.state;
+    
+        let throttle_value = state.get("throttle").map_or(0.0, |&v| f32::from(v) / 255.0);
+        let brake_value = state.get("brake").map_or(0.0, |&v| f32::from(v) / 255.0);
+        let steering_value = state.get("steering").map_or(0.0, |&v| self.normalize_steering_to_carla_steer(v));
+    
+        state_transform_carla.insert("throttle".to_string(), throttle_value);
+        state_transform_carla.insert("brake".to_string(), brake_value);
+        state_transform_carla.insert("steering".to_string(), steering_value);
+    
         state_transform_carla
     }
-
+    
+    
     fn normalize_steering_to_carla_steer(&self, steering: u8) -> f32 {
         let normilize_steering = (steering as f32 / 127.0) - 1.0;
         normilize_steering
     }
+    
 }
