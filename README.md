@@ -3,9 +3,12 @@
 ![GitHub License](https://img.shields.io/github/license/misarb/g29rs)
 ![Crates.io Version](https://img.shields.io/crates/v/g29)  
    
-Rust driver for logitech G29 
+Rust driver for Logitech G29 
+
+![g29rs](./img/g29rs.png)
+
+
 This library provides a Rust interface for Logitech G29 wheel/pedal and force feedback control. 
-It utilizes the `hidapi` crate to interact with the G29 hardware
 
 # Prerequisites
  - Hidapi : "2.5.0"
