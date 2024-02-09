@@ -162,10 +162,10 @@ impl G29Interface {
         return (start_scale + end_scale).round() as u8;
     }
 
-    /// Transform <G29> Controller input to caral controlle
-    /// throttle -> [0,1]
-    /// brake -> [0,1]
-    /// steer -> [-1,1]
+    /// Transform G29 Controller input to caral controlle
+    /// throttle in range of 0 -> 1
+    /// brake in range of  0 -> 1
+    /// steer in range of -1 -> 1
     pub fn carla_vehicle_controle(&self) -> HashMap<String, f32> {
         let mut state_transform_carla = HashMap::new();
         let state = &self.state;

@@ -1,4 +1,66 @@
-#![doc = include_str!("../README.md")]
+//! Rust driver for Logitech G29
+//!
+//! This library provides a Rust interface for Logitech G29 wheel/pedal and force feedback control.
+//!
+//! # Example
+//!
+//! ```rust
+//! use g29::controller::Controller;
+//!
+//! fn main() {
+//!     // Create a new G29 instance
+//!     let mut g29 = Controller::new();
+//!     // Set force feedback for G29 controller - make sure to set the Logitech to PS3 Mode
+//!     g29.g29.lock().unwrap().force_feedback_constant(0.6);
+//!     // Start the reading thread to continuously read input from the G29 device
+//!     g29.start_pumping();
+//!     loop {
+//!         println!("steering = {:?}", g29.g29.lock().unwrap().get_state());
+//!     }
+//! }
+//! ```
+//!
+//! Interacting with the driver without starting a thread to set force feedback.
+//!
+//! ```rust
+//! use g29::interface::G29Interface;
+//!
+//! fn main() {
+//!     // Create a new G29 driver instance
+//!     let mut g29 = G29Interface::new();
+//!     // Set ForceFeedback
+//!     g29.force_feedback_constant(0.5);
+//!
+//!     // Reset the G29 device, including steering wheel calibration
+//!     g29.reset();
+//!
+//!     // Example: Set autocenter with a strength of 0.5 and a rate of 0.05
+//!     g29.set_autocenter(0.5, 0.05);
+//! }
+//! ```
+//!
+//! Reading input from the Logitech G29 in the main thread, and getting the state input in carla format
+//!
+//! ```rust
+//! use g29::controller::Controller;
+//!
+//! fn main() {
+//!     // Create a new G29 instance
+//!     let mut g29 = Controller::new();
+//!     // Set G29 Steer to the center
+//!     g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
+//!     // Reading
+//!     loop {
+//!         // Reading every 10ms from the G29
+//!         g29.g29.lock().unwrap().pump(10);
+//!         // Get the read values
+//!         println!("Carla_controle = {:?}", g29.g29.lock().unwrap().carla_vehicle_controle());
+//!     }
+//! }
+//! ```
+//!
+
+
 
 
 pub mod controller;
