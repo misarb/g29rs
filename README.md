@@ -7,7 +7,6 @@ Rust driver for Logitech G29
 
 ![g29rs](./img/g29rs.png)
 
-
 This library provides a Rust interface for Logitech G29 wheel/pedal and force feedback control. 
 
 # Prerequisites
