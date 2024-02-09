@@ -1,8 +1,8 @@
-//! 
+//!
 //! This module provides functionality to run a separate thread and
 //! initiate reading from the G29 controller
 //!
-//! 
+//!
 use crate::interface::G29Interface;
 use std::{
     sync::{Arc, Mutex},
@@ -31,8 +31,9 @@ impl Controller {
         self.reading_thread = Some(thread::spawn(move || {
             local_g29.lock().unwrap().read_loop();
         }));
+        println!("thread_start_spawn");
     }
-    
+
     /// Stops the reading thread.
     pub fn stop_pumping(&mut self) {
         if let Some(handle) = self.reading_thread.take() {

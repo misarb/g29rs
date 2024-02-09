@@ -1,13 +1,9 @@
 //!
 //! Interfaces to interacting with the G29 controller to set force feedback , Autocenter ...
 //!
- 
+
 use hidapi::{HidApi, HidDevice};
-use std::{
-    collections::HashMap,
-    thread,
-    time::Duration,
-};
+use std::{collections::HashMap, thread, time::Duration};
 
 ///! The `G29Interface` struct is the underlying driver for the G29 device, managing communication and state.
 #[derive(Debug)]
@@ -149,8 +145,6 @@ impl G29Interface {
         if byte_array[8] != self.cache[8] {
             self.state.insert("clutch", byte_array[8]);
         }
-
-        println!("update_state = {:?}", self.state);
     }
 
     /// Retrieves the current state of the G29 device.
@@ -166,5 +160,31 @@ impl G29Interface {
         // scale between 0 -> 3
         let end_scale = (*end as f32 / 255.0) * (100.0 / 256.0);
         return (start_scale + end_scale).round() as u8;
+    }
+
+    /// Transform <G29> Controller input to caral controlle
+    /// throttle -> [0,1]
+    /// brake -> [0,1]
+    /// steer -> [-1,1]
+    pub fn carla_vehicle_controle(&self) -> HashMap<String, f32> {
+        let mut state_transform_carla = HashMap::new();
+        let state = &self.state;
+
+        let throttle_value = state.get("throttle").map_or(0.0, |&v| f32::from(v) / 255.0);
+        let brake_value = state.get("brake").map_or(0.0, |&v| f32::from(v) / 255.0);
+        let steering_value = state
+            .get("steering")
+            .map_or(0.0, |&v| self.normalize_steering_to_carla_steer(v));
+
+        state_transform_carla.insert("throttle".to_string(), throttle_value);
+        state_transform_carla.insert("brake".to_string(), brake_value);
+        state_transform_carla.insert("steering".to_string(), steering_value);
+
+        state_transform_carla
+    }
+
+    fn normalize_steering_to_carla_steer(&self, steering: u8) -> f32 {
+        let normilize_steering = (steering as f32 / 127.0) - 1.0;
+        normilize_steering
     }
 }
