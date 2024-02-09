@@ -1,21 +1,19 @@
 use g29::controller::Controller;
 
 fn main() {
-    let mut g29 = Controller::new();
+    let g29 = Controller::new();
 
-    // set force feedback for G29 controller - make sure to set the Logitech to PS3 Mode
-    //binding.force_feedback_constant(0.6);
-    // Start the reading thread to continuously read input from the G29 device
-    g29.start_pumping();
-    //let binding = g29.g29.lock().unwrap();
+    // set the steering to Auto centering
+    g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
 
-    println!("thread spawned");
-    //let state = binding.carla_vehicle_controle();
-    //    g29.g29.lock().unwrap().set_autocenter(0.5, 0.05);
+    // start puming values from the Logitech G29
     loop {
-        // println!("throttle = {:?}", state.get("throttle"));
-        println!("steering = {:?}", g29.g29.lock().unwrap().get_state());
-
-        //println!("steering = {:?}", binding.get_state());
+        // reading value from the G29 every 10ms
+        g29.g29.lock().unwrap().pump(10);
+        // get the values state in carla values
+        println!(
+            "steering = {:?}",
+            g29.g29.lock().unwrap().carla_vehicle_controle()
+        );
     }
 }

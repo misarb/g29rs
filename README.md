@@ -49,7 +49,25 @@ This library provides a Rust interface for Logitech G29 wheel/pedal and force fe
 
  }
 ```
+Reading input from the Logitech G29 in the main thread , and geting the state input in carla format
 
+```rust
+ use g29::controller::Controller;
+
+ fn main() {
+    // Create a new G29 instance
+    let mut g29 = Controller::new();
+   // set G29 Steer to the center 
+    g29.g29.lock().unwrap().set_autocenter(0.5,0.05);
+    // reading 
+   loop {
+      // reading every 10ms from the G29
+      g29.g29.lock().unwrap().pump(10);
+      // get the readed values 
+      println!("Carla_controle = {:?}", g29.g29.lock().unwrap().carla_vehicle_controle());
+    }
+ }
+```
 
 # TODO
 
@@ -57,14 +75,13 @@ This library provides a Rust interface for Logitech G29 wheel/pedal and force fe
 - [ ] Writing Test
 - [x] Make it as Lib after testing the full code 
 - [ ] Reading reverse mode from buttons in the G29 controller 
-- [ ] Make methode to transform the State for Carla user "throttle  [0 -> 1] brake [0 -> 1] brake[0->1]"
+- [x] Make methode to transform the State for Carla user "throttle  [0 -> 1] brake [0 -> 1] brake[0->1]"
 
 # Contributing
 Contributions are welcome! If you have improvements, bug fixes, or new features to propose, please submit a pull request.
 
-
 # support
 
-Only G29 logitech controller Driving wheel and pedals is supported for now, and also the forcce Feddback with the PS3 mode
+Only G29 logitech controller Driving wheel/pedals is supported for now, and also the force Feedback with the PS3 mode
 
 Support Force feedback
