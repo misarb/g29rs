@@ -80,6 +80,7 @@ Reading input from the Logitech G29 in the main thread , and geting the state in
 # Contributing
 Contributions are welcome! If you have improvements, bug fixes, or new features to propose, please submit a pull request.
 
+![C++::G29cpp](https://github.com/misarb/G29cpp)
 # support
 
 Only G29 logitech controller Driving wheel/pedals is supported for now, and also the force Feedback with the PS3 mode
