@@ -86,3 +86,5 @@ Contributions are welcome! If you have improvements, bug fixes, or new features 
 Only G29 logitech controller Driving wheel/pedals is supported for now, and also the force Feedback with the PS3 mode
 
 Support Force feedback
+
+Buy me a Coffee : [paypal](paypal.me/LBoulbalah)
